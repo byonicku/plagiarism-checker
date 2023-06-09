@@ -1,5 +1,0 @@
-Install ini
-https://nodejs.org/en/
-
-execute ini nanti di powershell / cmd
-npm install -g @dodona/dolos
