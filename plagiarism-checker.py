@@ -2,91 +2,213 @@ import glob
 import os
 import csv
 from pyunpack import Archive
+import tkinter as tk
+from tkinter import filedialog
+from tkinter import messagebox
+import subprocess
+import shutil
+import psutil
 
-#base directory dimana file plagiarism-checker.py berada
-base = os.path.dirname(os.path.realpath(__file__))
+import importlib
+REQUIRED_DEPENDENCIES = ["npx"]
+REQUIRED_LIBRARIES = ["tkinter", "glob", "csv", "shutil", "psutil", "importlib", "pyunpack"]
 
-def check_zipped():
-    for filepath in glob.glob(os.path.join(base, ".unzipped")):
-        if filepath.endswith(".unzipped"):
-            return 1
+def check_dependencies() -> bool:
+    """Check if all required dependencies are installed."""
+    for dependency in REQUIRED_DEPENDENCIES:
+        if shutil.which(dependency) is None:
+            return False
+    return True
+
+def check_libraries() -> bool:
+    """Check if all required libraries are available."""
+    for library in REQUIRED_LIBRARIES:
+        try:
+            importlib.import_module(library)
+        except ImportError:
+            return False
+    return True
+
+def find_npx_executable() -> str:
+    """Find the path to the npx executable."""
+    npx_path = shutil.which("npx")
+    if npx_path is None:
+        raise FileNotFoundError("npx command not found.")
+    return npx_path
+
+def run_dolos_command(npx_path: str, folder_path: str, type: str):
+    if type == "new":
+        subprocess.Popen([npx_path, "dolos", "-f", "web", "-l", "c", os.path.join(folder_path, "info.csv"), "-o", os.path.join(folder_path, "dolos-report")])
+    else:
+        subprocess.Popen([npx_path, "dolos", "serve", folder_path], shell=True)
+
+def find_dolos_process() -> psutil.Process:
+    for process in psutil.process_iter(['pid', 'cmdline']):
+        if process.info['cmdline'] and 'dolos' in process.info['cmdline']:
+            return process
+    return None
+
+def close_dolos(window: tk.Tk, status : str):
+    dolos_process = find_dolos_process()
+    if dolos_process:
+        try:
+            parent = psutil.Process(dolos_process.pid)
+            for child in parent.children(recursive=True):
+                child.kill()
+            parent.kill()
+            print("Dolos process terminated successfully.")
+        except psutil.NoSuchProcess:
+            print("Dolos process not found.")
+    else:
+        print("Dolos process not found.")
+
+    run_button.configure(state=tk.NORMAL)
+    close_button.configure(state=tk.DISABLED)
+
+    if status == "Force":
+        window.destroy()
+
+def check_zipped(folder_path: str) -> bool:
+    return any(filepath.endswith(".unzipped") for filepath in glob.glob(os.path.join(folder_path, ".unzipped")))
+
+def check_scanned(folder_path: str) -> bool:
+    return any(os.path.relpath(filepath,folder_path).startswith("dolos-report") for filepath in glob.glob(os.path.join(folder_path, "*")))
     
-    return 0
 
-def check_scanned():
-    for filepath in glob.glob(os.path.join(base, "*")):
-        relativeBase = os.path.relpath(filepath, base).split(os.sep)[0]
-        
-        if relativeBase.startswith("dolos-report"):
-            return 1
-        
-    return 0
+def find_compress(folder_path: str) -> bool:
+    return any(filepath.endswith(".zip") or filepath.endswith(".rar") for filepath in glob.glob(os.path.join(folder_path, "**", "*"), recursive=True))
 
-#cek ada compressed file atau tidak
-def find_compress():
-    for filepath in glob.glob(os.path.join(base, "**", "*"), recursive=True):
-        if filepath.endswith(".zip") or filepath.endswith(".rar"):
-            return 1
+def find_report(folder_path: str) -> str:
+    for filepath in glob.glob(os.path.join(folder_path, "*")):
+        if os.path.relpath(filepath, folder_path).split(os.sep)[0].startswith("dolos-report"):
+            return filepath
+    return None
 
-    return 0
-
-def find_report():
-    for filepath in glob.glob(os.path.join(base, "*")):
-        relativeBase = os.path.relpath(filepath, base).split(os.sep)[0]
-        
-        if relativeBase.startswith("dolos-report"):
-            return relativeBase
-
-#extract compressed file in main folder
-def extract_compress_main():
-    for filepath in glob.glob(os.path.join(base, "*.zip")):
-        Archive(filepath).extractall(base)
+def extract_compress_main(folder_path: str):
+    print("Processing main archive ...")
+    for filepath in glob.glob(os.path.join(folder_path, "*.zip")):
+        Archive(filepath).extractall(folder_path)
         os.remove(filepath)
 
-#extract compressed file inside each folder
-def extract_compress():
-    for filepath in glob.glob(os.path.join(base, "**", "*"), recursive=True):
-        relativeBase = os.path.relpath(filepath, base).split(os.sep)[0]
-        
-        if filepath.endswith(".zip") or filepath.endswith(".rar"):
-            Archive(filepath).extractall(relativeBase)
-            os.remove(filepath)
+def extract_compress_sub(folder_path: str):
+    if find_compress(folder_path):
+        print("Processing sub archives ...")
+        for filepath in glob.glob(os.path.join(folder_path, "**", "*"), recursive=True):
+            destination_dir = os.path.relpath(filepath, folder_path).split(os.sep)[0]
+            if filepath.endswith(".zip") or filepath.endswith(".rar"):
+                Archive(filepath).extractall(os.path.join(folder_path, destination_dir))
+                os.remove(filepath)
 
-#convert ke csv
-def to_csv():
-    with open('info.csv', 'w', newline='') as csvfile:
+def to_csv(folder_path: str):
+    with open(os.path.join(folder_path, "info.csv"), 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=("full_name", "filename"))
         writer.writeheader()
-        for filepath in glob.glob(os.path.join(base, "**", "*"), recursive=True):
-            relativeBase = os.path.relpath(filepath, base).split(os.sep)[0]
-                
+        for filepath in glob.glob(os.path.join(folder_path, "**", "*"), recursive=True):
+            relative_path = os.path.relpath(filepath, folder_path)
+            destination_dir = relative_path.split(os.sep)[0]
             if filepath.endswith(".c") or filepath.endswith(".cpp"):
-                full_name = relativeBase.split("_")[0]
-                writer.writerow({"full_name": full_name, "filename": filepath})
+                full_name = destination_dir.split("_")[0]
+                writer.writerow({"full_name": full_name, "filename": relative_path.replace('\\', '/')})
+                
 
-def __main__():
-    if(check_zipped() == 0):
-        open(".unzipped", "x")
-        
-        print("Processing main archive ...")
-        extract_compress_main()
+def run(folder_var : str):
+    folder_path = folder_var
 
-        print("Processing archive ...")
-        extract_compress()
-
-        if find_compress() == 1 :
-            print("Processing sub archive ...")
-            extract_compress()
+    # Check if all dependencies are installed
+    if not check_dependencies():
+        messagebox.showinfo("Error", "Required dependencies are missing.")
+        return
     
+    # Check if a folder is selected
+    if not folder_path:
+        messagebox.showinfo("Error", "No folder selected.")
+        return
+    
+    # Check the files in the folder
+    if not check_zipped(folder_path):
+        open(os.path.join(folder_path, ".unzipped"), "x")
+        extract_compress_main(folder_path)
+        while(find_compress(folder_path)):
+            extract_compress_sub(folder_path)
+
     print("Running!")
 
-    if(check_scanned() == 0):
+    if not check_scanned(folder_path):
         print("Processing to csv ...")
-        to_csv()
-        os.system("dolos -f web -l c info.csv")
-    else:    
-        os.system("dolos serve " + find_report())
+        to_csv(folder_path)
+        try:
+            npx_path = find_npx_executable()
+            run_dolos_command(npx_path, folder_path, "new")
+            run_button.configure(state=tk.DISABLED)
+            close_button.configure(state=tk.NORMAL)
+        except FileNotFoundError as e:
+            print(str(e))
+
+        return
     
+    report_path = find_report(folder_path)
+    if report_path:
+        print("Report found:", report_path)
+        try:
+            npx_path = find_npx_executable()
+            run_dolos_command(npx_path, report_path, "else")
+            run_button.configure(state=tk.DISABLED)
+            close_button.configure(state=tk.NORMAL)
+        except FileNotFoundError as e:
+            print(str(e))
+    else:
+        print("No report found.")
+
+    print("Dolos process started.")
+
+# Create the GUI window
+window = tk.Tk()
+
+# Set window title
+window.title("Dolos Report Checker")
+
+# Create a frame for the folder selection
+frame = tk.Frame(window)
+frame.pack(pady=20)
+
+# Function to handle folder selection
+def browse_folder():
+    folder_path = filedialog.askdirectory()
+    if folder_path:
+        folder_var.set(folder_path)
+
+# Label for folder selection
+label = tk.Label(frame, text="Select a folder to check:")
+label.pack(side=tk.LEFT)
+
+# Entry field to display selected folder
+folder_var = tk.StringVar()
+folder_entry = tk.Entry(frame, textvariable=folder_var, width=40, state="disabled")
+folder_entry.pack(side=tk.LEFT)
+
+# Button to browse for a folder
+browse_button = tk.Button(frame, text="Browse", command=browse_folder)
+browse_button.pack(side=tk.LEFT)
+
+# Create a frame for the action buttons
+action_frame = tk.Frame(window)
+action_frame.pack(pady=10)
+
+# Button to run the check
+run_button = tk.Button(action_frame, text="Run Check", command=lambda: run(folder_var.get()))
+run_button.pack(side=tk.LEFT)
+
+# Button to close Dolos
+close_button = tk.Button(action_frame, text="Close Dolos", command=lambda: close_dolos(window, "Normal"), state=tk.DISABLED)
+close_button.pack(side=tk.LEFT)
+
+def main():
+    if not check_libraries():
+        messagebox.showinfo("Error", "Required Python libraries are missing.")
+        return
     
+    window.protocol("WM_DELETE_WINDOW", lambda: close_dolos(window, "Force"))
+    window.mainloop()
+
 if __name__ == "__main__":
-    __main__()
+    main()
