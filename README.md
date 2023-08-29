@@ -1,5 +1,5 @@
 # plagiarism-checker
-This tool is just parser and unzipper for checking plagiarism in coding test.
+This tool is just parser and unzipper for checking plagiarism in coding test. Currently only available for windows.
 
 # Depedency
 If only using executable in my repo, only need these two to be installed.
@@ -14,7 +14,7 @@ Else you need all of these to this simple app to work.
     > pip install pyunpack
 
 # How to compile
-Just click compile on your favorite IDE. (ONLY AVAILABLE FOR WINDOWS)
+Just click compile on your favorite IDE.
 
 # How to use
 * Open plagiarism-checker.exe / Compile plagiarism-checker.py
@@ -23,3 +23,7 @@ Just click compile on your favorite IDE. (ONLY AVAILABLE FOR WINDOWS)
 * Enjoy
 
     > Don't forget to close dolos after run, or your localhost port 3000 will be occupied
+
+# QNA
+* What happen if i re-run same folder that this app already check?
+  > It will automatically open .csv file available in that folder, and proceed to open your default browser to display the data.
