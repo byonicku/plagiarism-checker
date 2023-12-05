@@ -8,10 +8,11 @@ from tkinter import messagebox
 import subprocess
 import shutil
 import psutil
+import patoolib as patool
 
 import importlib
 REQUIRED_DEPENDENCIES = ["npx"]
-REQUIRED_LIBRARIES = ["tkinter", "glob", "csv", "shutil", "psutil", "importlib", "pyunpack"]
+REQUIRED_LIBRARIES = ["tkinter", "glob", "csv", "shutil", "psutil", "importlib", "pyunpack", "patoolib"]
 
 def check_dependencies() -> bool:
     """Check if all required dependencies are installed."""
@@ -95,9 +96,14 @@ def extract_compress_sub(folder_path: str):
         print("Processing sub archives ...")
         for filepath in glob.glob(os.path.join(folder_path, "**", "*"), recursive=True):
             destination_dir = os.path.relpath(filepath, folder_path).split(os.sep)[0]
-            if filepath.endswith(".zip") or filepath.endswith(".rar"):
+            if filepath.endswith(".zip"):
                 Archive(filepath).extractall(os.path.join(folder_path, destination_dir))
                 os.remove(filepath)
+            else:
+                for inner in glob.glob(os.path.join(filepath, "*")):
+                    if inner.endswith(".rar"):
+                        patool.extract_archive(inner, outdir=os.path.join(filepath, destination_dir), verbosity=-1)
+                        os.remove(inner)
 
 def to_csv(folder_path: str):
     with open(os.path.join(folder_path, "info.csv"), 'w', newline='') as csvfile:
