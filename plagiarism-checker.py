@@ -71,7 +71,7 @@ def close_dolos(window: tk.Tk, status : str):
             for child in parent.children(recursive=True):
                 child.kill()
             parent.kill()
-            print("Dolos process terminated successfully.")
+            messagebox.showinfo("Success", "Dolos process terminated successfully.")
         except psutil.NoSuchProcess:
             print("Dolos process not found.")
     else:
@@ -164,7 +164,7 @@ def run(folder_var : str, language : str):
         messagebox.showinfo("Error", "Language not found in this folder")
         return
     
-    print("Running!")
+    messagebox.showinfo("Running!", "Dolos process is starting ...")
 
     if not check_scanned(folder_path):
         print("Processing to csv ...")
@@ -175,7 +175,7 @@ def run(folder_var : str, language : str):
             run_button.configure(state=tk.DISABLED)
             close_button.configure(state=tk.NORMAL)
         except FileNotFoundError as e:
-            print(str(e))
+            messagebox.showinfo("Error, please report to creator!", str(e))
 
         return
     
@@ -188,11 +188,11 @@ def run(folder_var : str, language : str):
             run_button.configure(state=tk.DISABLED)
             close_button.configure(state=tk.NORMAL)
         except FileNotFoundError as e:
-            print(str(e))
+            messagebox.showinfo("Error please report to creator!", str(e))
     else:
-        print("No report found.")
+        messagebox.showinfo("Error", "No report found.")
 
-    print("Dolos process started.")
+    messagebox.showinfo("Process Done!", "Dolos process has been started, you can close this window now.")
 
 # Create the GUI window
 window = tk.Tk()
