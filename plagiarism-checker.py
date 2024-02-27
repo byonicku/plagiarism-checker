@@ -13,6 +13,20 @@ import patoolib as patool
 import importlib
 REQUIRED_DEPENDENCIES = ["npx"]
 REQUIRED_LIBRARIES = ["tkinter", "glob", "csv", "shutil", "psutil", "importlib", "pyunpack", "patoolib"]
+LANGUAGE_EXTENSION = {
+    "Python": ".py",
+    "Java": ".java",
+    "C/C++": (".c", ".cpp"),
+    "JavaScript": ".js",
+    "PHP": ".php"
+}
+DOLOS_LANGUAGE = {
+    "Python": "python",
+    "Java": "java",
+    "C/C++": "c",
+    "JavaScript": "js",
+    "PHP": "php"
+}
 
 def check_dependencies() -> bool:
     """Check if all required dependencies are installed."""
@@ -37,9 +51,9 @@ def find_npx_executable() -> str:
         raise FileNotFoundError("npx command not found.")
     return npx_path
 
-def run_dolos_command(npx_path: str, folder_path: str, type: str):
+def run_dolos_command(npx_path: str, folder_path: str, type: str, language: str):
     if type == "new":
-        subprocess.Popen([npx_path, "dolos", "-f", "web", "-l", "c", os.path.join(folder_path, "info.csv"), "-o", os.path.join(folder_path, "dolos-report")])
+        subprocess.Popen([npx_path, "dolos", "-f", "web", "-l", DOLOS_LANGUAGE[language], os.path.join(folder_path, "info.csv"), "-o", os.path.join(folder_path, "dolos-report")])
     else:
         subprocess.Popen([npx_path, "dolos", "serve", folder_path], shell=True)
 
@@ -85,6 +99,9 @@ def find_report(folder_path: str) -> str:
             return filepath
     return None
 
+def find_extension(folder_path: str, language: str) -> bool:
+    return any(filepath.endswith(LANGUAGE_EXTENSION[language]) for filepath in glob.glob(os.path.join(folder_path, "**", "*"), recursive=True))
+
 def extract_compress_main(folder_path: str):
     print("Processing main archive ...")
     for filepath in glob.glob(os.path.join(folder_path, "*.zip")):
@@ -105,21 +122,26 @@ def extract_compress_sub(folder_path: str):
                         patool.extract_archive(inner, outdir=os.path.join(filepath, destination_dir), verbosity=-1)
                         os.remove(inner)
 
-def to_csv(folder_path: str):
+def to_csv(folder_path: str, language: str):
     with open(os.path.join(folder_path, "info.csv"), 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=("full_name", "filename"))
         writer.writeheader()
         for filepath in glob.glob(os.path.join(folder_path, "**", "*"), recursive=True):
             relative_path = os.path.relpath(filepath, folder_path)
             destination_dir = relative_path.split(os.sep)[0]
-            if filepath.endswith(".c") or filepath.endswith(".cpp"):
+            if filepath.endswith(LANGUAGE_EXTENSION[language]):
                 full_name = destination_dir.split("_")[0]
                 writer.writerow({"full_name": full_name, "filename": relative_path.replace('\\', '/')})
                 
 
-def run(folder_var : str):
+def run(folder_var : str, language : str):
     folder_path = folder_var
-
+    
+    # Check if user haven't selected a language
+    if language == "Select Language":
+        messagebox.showinfo("Error", "Please Select Your Language!")
+        return
+    
     # Check if all dependencies are installed
     if not check_dependencies():
         messagebox.showinfo("Error", "Required dependencies are missing.")
@@ -137,14 +159,19 @@ def run(folder_var : str):
         while(find_compress(folder_path)):
             extract_compress_sub(folder_path)
 
+    # Check to find selected language after unzipping
+    if not find_extension(folder_path, language):
+        messagebox.showinfo("Error", "Language not found in this folder")
+        return
+    
     print("Running!")
 
     if not check_scanned(folder_path):
         print("Processing to csv ...")
-        to_csv(folder_path)
+        to_csv(folder_path, language)
         try:
             npx_path = find_npx_executable()
-            run_dolos_command(npx_path, folder_path, "new")
+            run_dolos_command(npx_path, folder_path, "new", language)
             run_button.configure(state=tk.DISABLED)
             close_button.configure(state=tk.NORMAL)
         except FileNotFoundError as e:
@@ -157,7 +184,7 @@ def run(folder_var : str):
         print("Report found:", report_path)
         try:
             npx_path = find_npx_executable()
-            run_dolos_command(npx_path, report_path, "else")
+            run_dolos_command(npx_path, report_path, "else", language)
             run_button.configure(state=tk.DISABLED)
             close_button.configure(state=tk.NORMAL)
         except FileNotFoundError as e:
@@ -200,8 +227,15 @@ browse_button.pack(side=tk.LEFT)
 action_frame = tk.Frame(window)
 action_frame.pack(pady=10)
 
+# Dropdown for language selection
+language_var = tk.StringVar()
+language_options = ["Python", "Java", "C/C++", "JavaScript", "PHP"]  # Add more options as needed
+language_dropdown = tk.OptionMenu(action_frame, language_var, *language_options)
+language_var.set("Select Language")
+language_dropdown.pack(side=tk.LEFT)
+
 # Button to run the check
-run_button = tk.Button(action_frame, text="Run Check", command=lambda: run(folder_var.get()))
+run_button = tk.Button(action_frame, text="Run Check", command=lambda: run(folder_var.get(), language_var.get()))
 run_button.pack(side=tk.LEFT)
 
 # Button to close Dolos
