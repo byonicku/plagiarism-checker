@@ -11,7 +11,7 @@ import psutil
 import patoolib as patool
 
 import importlib
-REQUIRED_DEPENDENCIES = ["npx"]
+REQUIRED_DEPENDENCIES = ["npx", "dolos"]
 REQUIRED_LIBRARIES = ["tkinter", "glob", "csv", "shutil", "psutil", "importlib", "pyunpack", "patoolib"]
 LANGUAGE_EXTENSION = {
     "Python": ".py",
@@ -243,6 +243,10 @@ close_button = tk.Button(action_frame, text="Close Dolos", command=lambda: close
 close_button.pack(side=tk.LEFT)
 
 def main():
+    if not check_dependencies():
+        messagebox.showinfo("Error", "Required dependencies are missing. Make sure Node JS and Dolos are installed.")
+        return
+    
     if not check_libraries():
         messagebox.showinfo("Error", "Required Python libraries are missing.")
         return
