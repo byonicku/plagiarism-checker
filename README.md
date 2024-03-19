@@ -17,6 +17,30 @@ Otherwise, you'll need all of the following for this simple app to function:
     pip install pyunpack
     ```
 
+## Installation
+
+To use this tool, please follow these steps:
+
+1. Clone the repository:
+
+    ```bash
+    git clone https://github.com/byonicku/plagiarism-checker.git
+    ```
+
+2. Navigate to the repository directory:
+
+    ```bash
+    cd plagiarism-checker
+    ```
+
+3. Install the required packages using `pip` and the provided `requirements.txt` file:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+This will install all the necessary dependencies for running the Plagiarism Checker tool.
+
 ## How to Compile
 
 Simply click "compile" in your favorite IDE.
