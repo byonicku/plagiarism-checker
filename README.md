@@ -1,29 +1,36 @@
-# plagiarism-checker
-This tool is just parser and unzipper for checking plagiarism in coding test. Currently only available for windows.
+# Plagiarism Checker
 
-# Depedency
-If only using executable in my repo, only need these two to be installed.
-* Dolos (https://dolos.ugent.be/guide/installation.html)
-* NodeJS (LTS Most Recommended Ver)
+This tool serves as a parser and unzipper designed for checking plagiarism in coding tests. Currently, it is only available for Windows.
 
-Else you need all of these to this simple app to work.
+## Dependencies
+
+If you're using the executable from my repository, you only need to install the following two dependencies:
+* [Dolos](https://dolos.ugent.be/guide/installation.html)
+* [Node.js (LTS)](https://nodejs.org/en/download/current)
+
+Otherwise, you'll need all of the following for this simple app to function:
 * Python 3.x
 * Visual Studio Build Tools 2022
 * pyunpack
 
-    > pip install pyunpack
+    ```
+    pip install pyunpack
+    ```
 
-# How to compile
-Just click compile on your favorite IDE.
+## How to Compile
 
-# How to use
-* Open plagiarism-checker.exe / Compile plagiarism-checker.py
-* Select which folder contain zip of assignment
-* Press Run Check, and there's should be webpage
-* Enjoy
+Simply click "compile" in your favorite IDE.
 
-    > Don't forget to close dolos after run, or your localhost port 3000 will be occupied
+## How to Use
 
-# QNA
-* What happen if i re-run same folder that this app already check?
-  > It will automatically open .csv file available in that folder, and proceed to open your default browser to display the data.
+* Open `plagiarism-checker.exe` or compile `plagiarism-checker.py`.
+* Select the folder containing the assignment zip file.
+* Press "Run Check," and a webpage should appear.
+* Enjoy!
+
+    > Remember to close Dolos after running, or your localhost port 3000 will remain occupied.
+
+## Q&A
+
+* What happens if I re-run the same folder that this app has already checked?
+  > It will automatically open the `.csv` file available in that folder and proceed to open your default browser to display the data.
