@@ -11,13 +11,8 @@ If you're using the executable from my repository, you only need to install the 
 Otherwise, you'll need all of the following for this simple app to function:
 * Python 3.x
 * Visual Studio Build Tools 2022
-* pyunpack
 
-    ```
-    pip install pyunpack
-    ```
-
-## Installation
+## Installing Packages
 
 To use this tool, please follow these steps:
 
